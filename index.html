@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Markdown to Word (.docx) converter: free, in your browser</title>
+<meta name="description" content="Paste or drop a Markdown file and download a .docx. Converted in your browser, nothing is uploaded. Free and open source.">
+<style>
+body{font:16px/1.5 system-ui,sans-serif;max-width:760px;margin:0 auto;padding:1rem;color:#1d1d1f}
+h1{font-size:1.6rem;margin-bottom:.2rem}
+#drop{border:2px dashed #9aa;border-radius:8px;padding:.6rem;margin:1rem 0}
+#drop.over{background:#eef6ff;border-color:#2f6fde}
+textarea{width:100%;height:16rem;box-sizing:border-box;font:14px/1.4 ui-monospace,monospace}
+button{font:inherit;padding:.5rem 1rem;margin-top:.5rem;cursor:pointer}
+input[type=text]{font:inherit;padding:.3rem}
+#status{min-height:1.5rem;margin:.5rem 0}
+.note{background:#f5f5f7;border-radius:8px;padding:.7rem 1rem;margin:1.2rem 0;font-size:.92rem}
+footer{font-size:.85rem;color:#555;margin-top:2rem}
+</style>
+</head>
+<body>
+<h1>Markdown to Word (.docx)</h1>
+<p>Paste Markdown or drop a <code>.md</code> file, then download a Word document. The conversion runs in your browser: your text is not uploaded, and this page has no account, no email form and no analytics.</p>
+<div id="drop">
+<label>Open a file: <input type="file" id="file" accept=".md,.markdown,.txt,text/markdown,text/plain"></label> or drop it here
+<textarea id="md" placeholder="# Title&#10;&#10;Paste Markdown here" aria-label="Markdown"></textarea>
+</div>
+<label>File name: <input type="text" id="name" value="document" size="24"></label>
+<button id="convert" type="button">Download .docx</button>
+<div id="status" role="status"></div>
+<p>Supported: headings, bold/italic/strike/highlight, links, lists and task lists, tables, code blocks, block quotes and Obsidian-style callouts. Images are not embedded (local files cannot be read here, remote images are not downloaded); a placeholder is written instead.</p>
+<div class="note">
+<strong>About this tool.</strong> It was built with AI assistance (AI-generated code) and is open source (MIT):
+<a href="https://github.com/MegatronJeremy/markdown-to-word">source code</a>.
+It uses the same converter as <strong>DOCX Export Studio</strong>, a free Obsidian plugin (<a href="https://github.com/MegatronJeremy/docx-export-studio">GitHub</a>).
+The plugin also has an optional paid <strong>Pro</strong> version (about batch export of folders, Word style presets, footnotes, headers and footers) sold on Gumroad:
+<a href="https://xparhyx.gumroad.com/l/bpfqja?utm_source=pages" rel="noopener">DOCX Export Studio Pro</a>. This web page is free and nothing here needs Pro. We run it to find people who might want the plugin, and we may earn money if you buy Pro.
+</div>
+<footer>Check the claim yourself: open your browser's network tab, then convert a file. No requests are made after the page loads. The page's security policy also blocks outgoing connections.</footer>
+<script src="app.js"></script>
+</body>
+</html>
