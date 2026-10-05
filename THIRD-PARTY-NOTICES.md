@@ -1,6 +1,6 @@
 # Third-party notices
 
-DOCX Export Studio's `main.js` bundles the `docx` library and its runtime dependencies. This list is every package in the production dependency tree of `package-lock.json` (generated 2026-10-02 from the lock file and each package's licence file or `package.json`). Development-only tools (TypeScript, esbuild, vitest and so on) are not shipped and are not listed.
+This page's `app.js` (root and `docs/` copies) bundles the `docx` library and its runtime dependencies. This list is every package in the production dependency tree of DOCX Export Studio's `package-lock.json`, which `app.js` is built from (generated 2026-10-02 from the lock file and each package's licence file or `package.json`). Development-only tools (TypeScript, esbuild, vitest and so on) are not shipped and are not listed.
 
 DOCX Export Studio itself is MIT licensed (see `LICENSE`).
 
