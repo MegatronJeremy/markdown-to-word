@@ -173,9 +173,9 @@ export function parseBlocks(lines: string[]): Block[] {
           if (!stack.length || indent > stack[stack.length - 1]) stack.push(indent);
           let content = m[3];
           let checked: boolean | undefined;
-          const task = content.match(/^\[([ xX])\]\s+(.*)$/);
+          const task = content.match(/^\[([ xX/-])\]\s+(.*)$/);
           if (task) {
-            checked = task[1] !== " ";
+            checked = task[1] === "x" || task[1] === "X";
             content = task[2];
           }
           items.push({ level: Math.min(stack.length - 1, 8), ordered: /\d/.test(m[2]), checked, content: parseInline(content) });

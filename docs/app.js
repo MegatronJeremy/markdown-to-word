@@ -21245,9 +21245,9 @@
             if (!stack.length || indent > stack[stack.length - 1]) stack.push(indent);
             let content2 = m[3];
             let checked;
-            const task = content2.match(/^\[([ xX])\]\s+(.*)$/);
+            const task = content2.match(/^\[([ xX/-])\]\s+(.*)$/);
             if (task) {
-              checked = task[1] !== " ";
+              checked = task[1] === "x" || task[1] === "X";
               content2 = task[2];
             }
             items.push({ level: Math.min(stack.length - 1, 8), ordered: /\d/.test(m[2]), checked, content: parseInline(content2) });

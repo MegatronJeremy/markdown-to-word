@@ -42,6 +42,7 @@ const fixtures = {
   callout: ["> [!warning] Careful\n> body text\n", ["Careful", "body text"]],
   footnotes: ["Claim[^1] here.\n\n[^1]: The source.\n", ["Claim", "here."]],
   "task list": ["- [x] done\n- [ ] todo\n", ["done", "todo", "☑ ", "☐ "]],
+  "task states / and -": ["- [/] partial\n- [-] dropped\n- [x] done\n", ["partial", "dropped", "done"], (x) => !x.includes("[/]") && !x.includes("[-]")],
   emoji: ["# Party 🎉\n\nHello 👋🏽 world 🚀 ❤️\n", ["Party 🎉", "Hello 👋🏽 world 🚀 ❤️"]],
   "CJK and Cyrillic": ["# 見出し\n\n日本語のテキスト、中文文本，한국어\n\nПривет, мир! Это тест.\n", ["見出し", "日本語のテキスト、中文文本，한국어", "Привет, мир! Это тест."]],
   "inline styles": ["**bold** *it* ~~gone~~ ==hi== `code` ***both***", ["bold", "it", "gone", "hi", "code", "both"], (x) => /<w:b\/>/.test(x) && /<w:strike\/>/.test(x)],
