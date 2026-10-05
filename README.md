@@ -13,3 +13,5 @@ AI-assisted (AI-generated code). MIT licence. The converter (`src/parser.ts`, `s
 Rebuild: `npm i docx esbuild && node build.mjs` writes `docs/app.js`.
 
 There is an optional paid Pro of the plugin (not needed for this page; we may earn money if you buy it): https://xparhyx.gumroad.com/l/bpfqja?utm_source=pages
+
+Tests: `npm i && node --test test/convert.test.mjs` (results in TESTED.md).

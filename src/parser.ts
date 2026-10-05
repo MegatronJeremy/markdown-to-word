@@ -5,8 +5,53 @@ import type { Block, Inline, InlineStyle, ListItem } from "./ast";
 export function parseMarkdown(source: string): Block[] {
   let text = source.replace(/\r\n?/g, "\n").replace(/\t/g, "    ");
   text = text.replace(/^---\n[\s\S]*?\n---[ \t]*(\n|$)/, ""); // frontmatter
-  text = text.replace(/%%[\s\S]*?%%/g, ""); // Obsidian comments
+  text = outsideFences(text, (seg) => resolveReferences(seg.replace(/%%[\s\S]*?%%/g, "").replace(/<!--[\s\S]*?-->/g, ""))); // Obsidian and HTML comments
   return parseBlocks(text.split("\n"));
+}
+
+/** Apply `fn` to the parts of the text that are not inside fenced code (fences are kept as they are). */
+function outsideFences(text: string, fn: (segment: string) => string): string {
+  const out: string[] = [];
+  let seg: string[] = [];
+  let fence: string | null = null;
+  const flush = () => {
+    if (seg.length) out.push(fn(seg.join("\n")));
+    seg = [];
+  };
+  for (const l of text.split("\n")) {
+    if (fence) {
+      out.push(l);
+      if (l.trim().startsWith(fence)) fence = null;
+      continue;
+    }
+    const f = l.match(FENCE);
+    if (f) {
+      flush();
+      fence = f[1];
+      out.push(l);
+    } else seg.push(l);
+  }
+  flush();
+  return out.join("\n");
+}
+
+/** Turn `[text][id]`, `[id][]` and `[id]` into inline links and drop the `[id]: url` definitions. */
+function resolveReferences(text: string): string {
+  const defs = new Map<string, string>();
+  const body = text.replace(/^ {0,3}\[([^\]^][^\]]*)\]:[ \t]*<?([^\s>]+)>?(?:[ \t]+(?:"[^"]*"|'[^']*'|\([^)]*\)))?[ \t]*$\n?/gm, (_m, id: string, url: string) => {
+    if (!defs.has(id.toLowerCase())) defs.set(id.toLowerCase(), url);
+    return "";
+  });
+  if (!defs.size) return text;
+  return body
+    .replace(/(!?)\[([^\]]+)\]\[([^\]]*)\]/g, (m, bang: string, label: string, id: string) => {
+      const url = defs.get((id || label).toLowerCase());
+      return url ? `${bang}[${label}](${url})` : m;
+    })
+    .replace(/(^|[^\]!])\[([^\]]+)\](?![[(:])/g, (m, pre: string, label: string) => {
+      const url = defs.get(label.toLowerCase());
+      return url ? `${pre}[${label}](${url})` : m;
+    });
 }
 
 const FENCE = /^ {0,3}(`{3,}|~{3,})\s*([^\s`]*)/;
@@ -59,6 +104,14 @@ export function parseBlocks(lines: string[]): Block[] {
       while (i < lines.length && !lines[i].trim().startsWith(marker)) body.push(lines[i++]);
       i++; // closing fence (or EOF)
       blocks.push({ t: "code", lang: fence[2] ?? "", text: body.join("\n") });
+      continue;
+    }
+
+    if (/^ {4,}\S/.test(line)) {
+      const body: string[] = [];
+      while (i < lines.length && (isBlank(lines[i]) || /^ {4}/.test(lines[i]))) body.push(lines[i++].slice(4));
+      while (body.length && isBlank(body[body.length - 1])) body.pop();
+      blocks.push({ t: "code", lang: "", text: body.join("\n") });
       continue;
     }
 
@@ -141,13 +194,24 @@ export function parseBlocks(lines: string[]): Block[] {
 
     const para: string[] = [line];
     i++;
-    while (i < lines.length && !isBlank(lines[i]) && !startsBlock(lines, i)) para.push(lines[i++]);
+    let setext = 0;
+    while (i < lines.length && !isBlank(lines[i])) {
+      const u = lines[i].match(/^ {0,3}(=+|-+)[ \t]*$/);
+      if (u) {
+        setext = u[1][0] === "=" ? 1 : 2;
+        i++;
+        break;
+      }
+      if (startsBlock(lines, i)) break;
+      para.push(lines[i++]);
+    }
     const content: Inline[] = [];
     para.forEach((p, idx) => {
       if (idx > 0) content.push({ t: "break" });
-      content.push(...parseInline(p.trim()));
+      content.push(...parseInline(p.trim().replace(/\\$/, "")));
     });
-    blocks.push({ t: "paragraph", content });
+    if (setext) blocks.push({ t: "heading", level: setext as 1 | 2, content });
+    else if (content.some((n) => n.t !== "break" && !(n.t === "text" && n.text.trim() === ""))) blocks.push({ t: "paragraph", content });
   }
   return blocks;
 }
@@ -216,6 +280,21 @@ export function parseInline(src: string, style: InlineStyle = {}): Inline[] {
       out.push({ t: "fnref", id: m[1] });
     } else if ((m = rest.match(/^\[\[([^\]|]+)(?:\|([^\]]*))?\]\]/))) {
       buf += m[2] !== undefined ? m[2] : m[1].replace(/#\^?/g, " > ").replace(/ > $/, "").trim();
+    } else if ((m = rest.match(/^\[!\[([^\]]*)\]\(<?[^)\s>]+>?(?:\s+"[^"]*")?\)\]\(<?([^)\s>]+)>?(?:\s+"[^"]*")?\)/))) {
+      flush(); // badge: a linked image
+      out.push({ t: "link", href: m[2], children: [{ t: "text", text: m[1].trim() || m[2], ...style }] });
+    } else if ((m = rest.match(/^<((?:https?:\/\/|mailto:)[^\s<>]+)>/)) || (m = rest.match(/^<([^\s<>@]+@[^\s<>@]+\.[^\s<>@]+)>/))) {
+      flush();
+      const href = /^(https?:|mailto:)/i.test(m[1]) ? m[1] : "mailto:" + m[1];
+      out.push({ t: "link", href, children: [{ t: "text", text: m[1].replace(/^mailto:/i, ""), ...style }] });
+    } else if ((m = rest.match(/^<img\b[^>]*>/i))) {
+      flush();
+      const attr = (n: string) => m![0].match(new RegExp(`\\b${n}\\s*=\\s*(?:"([^"]*)"|'([^']*)')`, "i"));
+      const src = attr("src");
+      const alt = attr("alt");
+      if (src) out.push({ t: "image", src: src[1] ?? src[2], alt: (alt?.[1] ?? alt?.[2] ?? "").trim(), width: widthOf(attr("width")?.[1]) });
+    } else if ((m = rest.match(/^<\/?(?:div|span|p|a|b|i|u|em|strong|center|details|summary|kbd|picture|source|h[1-6]|table|thead|tbody|tr|td|th|ul|ol|li|hr|small|mark|del|ins|abbr|sub|sup|section|br)\b[^>]*>/i)) && !/^<br/i.test(m[0])) {
+      flush(); // other inline/block HTML tags: drop the tag, keep the text
     } else if ((m = rest.match(/^\[([^\]]+)\]\(<?([^)\s>]+)>?(?:\s+"[^"]*")?\)/))) {
       flush();
       out.push({ t: "link", href: m[2], children: parseInline(m[1], style) });
